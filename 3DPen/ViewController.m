@@ -8,388 +8,313 @@
 
 #import "ViewController.h"
 
-#define BUFFER_OFFSET(i) ((char *)NULL + (i))
+#define MAX_VERTICES 1000
 
-// Uniform index.
-enum
+@interface ViewController()
 {
-    UNIFORM_MODELVIEWPROJECTION_MATRIX,
-    UNIFORM_NORMAL_MATRIX,
-    NUM_UNIFORMS
-};
-GLint uniforms[NUM_UNIFORMS];
-
-// Attribute index.
-enum
-{
-    ATTRIB_VERTEX,
-    ATTRIB_NORMAL,
-    NUM_ATTRIBUTES
-};
-
-GLfloat gCubeVertexData[216] = 
-{
-    // Data layout for each line below is:
-    // positionX, positionY, positionZ,     normalX, normalY, normalZ,
-    0.5f, -0.5f, -0.5f,        1.0f, 0.0f, 0.0f,
-    0.5f, 0.5f, -0.5f,         1.0f, 0.0f, 0.0f,
-    0.5f, -0.5f, 0.5f,         1.0f, 0.0f, 0.0f,
-    0.5f, -0.5f, 0.5f,         1.0f, 0.0f, 0.0f,
-    0.5f, 0.5f, 0.5f,          1.0f, 0.0f, 0.0f,
-    0.5f, 0.5f, -0.5f,         1.0f, 0.0f, 0.0f,
-    
-    0.5f, 0.5f, -0.5f,         0.0f, 1.0f, 0.0f,
-    -0.5f, 0.5f, -0.5f,        0.0f, 1.0f, 0.0f,
-    0.5f, 0.5f, 0.5f,          0.0f, 1.0f, 0.0f,
-    0.5f, 0.5f, 0.5f,          0.0f, 1.0f, 0.0f,
-    -0.5f, 0.5f, -0.5f,        0.0f, 1.0f, 0.0f,
-    -0.5f, 0.5f, 0.5f,         0.0f, 1.0f, 0.0f,
-    
-    -0.5f, 0.5f, -0.5f,        -1.0f, 0.0f, 0.0f,
-    -0.5f, -0.5f, -0.5f,       -1.0f, 0.0f, 0.0f,
-    -0.5f, 0.5f, 0.5f,         -1.0f, 0.0f, 0.0f,
-    -0.5f, 0.5f, 0.5f,         -1.0f, 0.0f, 0.0f,
-    -0.5f, -0.5f, -0.5f,       -1.0f, 0.0f, 0.0f,
-    -0.5f, -0.5f, 0.5f,        -1.0f, 0.0f, 0.0f,
-    
-    -0.5f, -0.5f, -0.5f,       0.0f, -1.0f, 0.0f,
-    0.5f, -0.5f, -0.5f,        0.0f, -1.0f, 0.0f,
-    -0.5f, -0.5f, 0.5f,        0.0f, -1.0f, 0.0f,
-    -0.5f, -0.5f, 0.5f,        0.0f, -1.0f, 0.0f,
-    0.5f, -0.5f, -0.5f,        0.0f, -1.0f, 0.0f,
-    0.5f, -0.5f, 0.5f,         0.0f, -1.0f, 0.0f,
-    
-    0.5f, 0.5f, 0.5f,          0.0f, 0.0f, 1.0f,
-    -0.5f, 0.5f, 0.5f,         0.0f, 0.0f, 1.0f,
-    0.5f, -0.5f, 0.5f,         0.0f, 0.0f, 1.0f,
-    0.5f, -0.5f, 0.5f,         0.0f, 0.0f, 1.0f,
-    -0.5f, 0.5f, 0.5f,         0.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f, 0.5f,        0.0f, 0.0f, 1.0f,
-    
-    0.5f, -0.5f, -0.5f,        0.0f, 0.0f, -1.0f,
-    -0.5f, -0.5f, -0.5f,       0.0f, 0.0f, -1.0f,
-    0.5f, 0.5f, -0.5f,         0.0f, 0.0f, -1.0f,
-    0.5f, 0.5f, -0.5f,         0.0f, 0.0f, -1.0f,
-    -0.5f, -0.5f, -0.5f,       0.0f, 0.0f, -1.0f,
-    -0.5f, 0.5f, -0.5f,        0.0f, 0.0f, -1.0f
-};
-
-@interface ViewController () {
-    GLuint _program;
-    
-    GLKMatrix4 _modelViewProjectionMatrix;
-    GLKMatrix3 _normalMatrix;
-    float _rotation;
-    
-    GLuint _vertexArray;
-    GLuint _vertexBuffer;
+    //GLKVector3 rotationD, rotationV, penD, penV, penA;
+    float timeSinceLastPenDraw;
+    BOOL penDrawing, tap;
+    char colorRotation;
+    int vertexCount;
+    CMMotionManager *motionManager;
+    NSOperationQueue *opQ;
+    NSOperation *motionHandler;
+    NSTimeInterval lastPenPositionTimestamp;
+    float t3, t2, t1, t0;
+    GLKVector3 a2, a1, a0, v3, v2, v1, d2;
+    GLKVector3 *vertices;
+    GLKVector4 *vertexColors;
+    float _maxX, _maxY, _maxZ, _minX, _minY, _minZ;
 }
 @property (strong, nonatomic) EAGLContext *context;
 @property (strong, nonatomic) GLKBaseEffect *effect;
-
-- (void)setupGL;
-- (void)tearDownGL;
-
-- (BOOL)loadShaders;
-- (BOOL)compileShader:(GLuint *)shader type:(GLenum)type file:(NSString *)file;
-- (BOOL)linkProgram:(GLuint)prog;
-- (BOOL)validateProgram:(GLuint)prog;
+@property (strong, nonatomic) NSMutableData *vertexData, *vertexColorData;
 @end
 
 @implementation ViewController
+@synthesize context, effect, vertexData, vertexColorData;
 
-@synthesize context = _context;
-@synthesize effect = _effect;
+#pragma mark - View lifecycle
 
-- (void)viewDidLoad
-{
+-(void)viewDidLoad {
     [super viewDidLoad];
-    
-    self.context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-
-    if (!self.context) {
-        NSLog(@"Failed to create ES context");
-    }
-    
-    GLKView *view = (GLKView *)self.view;
-    view.context = self.context;
-    view.drawableDepthFormat = GLKViewDrawableDepthFormat24;
-    
+    [self setupPen];
     [self setupGL];
 }
 
-- (void)viewDidUnload
-{    
+-(void)viewDidUnload {
     [super viewDidUnload];
-    
     [self tearDownGL];
+    [self tearDownPen];
+}
+
+-(void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];    
+    // Release any cached data, images, etc that aren't in use.
+}
+
+-(BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
+    return (interfaceOrientation == UIInterfaceOrientationPortrait);
+}
+
+#pragma mark - Pen Lifecycle
+
+-(void)setupPen
+{
+    motionManager = [[CMMotionManager alloc] init];
+    motionManager.deviceMotionUpdateInterval = 0.001;
+    //motionManager.accelerometerUpdateInterval = 0.001;
+    //motionManager.gyroUpdateInterval = 0.001;
+    //NSLog(@"%f, %f", motionManager.accelerometerUpdateInterval, motionManager.gyroUpdateInterval);
+    if (motionManager.isDeviceMotionAvailable) {
+        [motionManager startDeviceMotionUpdatesUsingReferenceFrame:CMAttitudeReferenceFrameXArbitraryZVertical
+                                                           toQueue:[NSOperationQueue currentQueue]
+                                                       withHandler:^(CMDeviceMotion *deviceMotion, NSError *error) {
+                                                           [self updatePenPositionWithDeviceMotion:deviceMotion];
+                                                       }];
+        /*
+         [motionManager startAccelerometerUpdatesToQueue:[NSOperationQueue currentQueue]
+                                            withHandler:^(CMAccelerometerData *accelerometerData, NSError *error) {[self updateWithAccelerometerData:accelerometerData];}];
+         */
+    } else NSLog(@"DeviceMotion is not available");
     
-    if ([EAGLContext currentContext] == self.context) {
-        [EAGLContext setCurrentContext:nil];
+    self.vertexData = [NSMutableData dataWithLength:sizeof(GLKVector3)*MAX_VERTICES];
+    vertices = [self.vertexData mutableBytes];
+    self.vertexColorData = [NSMutableData dataWithLength:sizeof(GLKVector4)*MAX_VERTICES*2];
+    vertexColors = [self.vertexColorData mutableBytes];
+    vertexCount = 0;
+    timeSinceLastPenDraw = 0.0;
+    [self drawLogo];
+}
+
+-(void)tearDownPen {
+    if ([motionManager isDeviceMotionActive]) [motionManager stopDeviceMotionUpdates];
+}
+
+-(void)updateWithAccelerometerData:(CMAccelerometerData *)a
+{
+    BOOL shouldPrint = NO;
+    if (a.acceleration.x > _maxX) {_maxX = a.acceleration.x; shouldPrint = YES;}
+    if (a.acceleration.y > _maxY) {_maxY = a.acceleration.y; shouldPrint = YES;}
+    if (a.acceleration.z > _maxZ) {_maxZ = a.acceleration.z; shouldPrint = YES;}
+    if (a.acceleration.x < _minX) {_minX = a.acceleration.x; shouldPrint = YES;}
+    if (a.acceleration.y < _minY) {_minY = a.acceleration.y; shouldPrint = YES;}
+    if (a.acceleration.z < _minZ) {_minZ = a.acceleration.z; shouldPrint = YES;}
+    if (shouldPrint) printf("x: %f %f\ny: %f %f\nz: %f %f\n\n", _minX, _maxX, _minY, _maxY, _minZ, _maxZ);
+}
+
+-(void)updatePenPositionWithDeviceMotion:(CMDeviceMotion *)deviceMotion {
+    CMAcceleration ua = deviceMotion.userAcceleration;
+    CMRotationMatrix rm = deviceMotion.attitude.rotationMatrix;
+    t3=t2; t2=t1; t1=t0;
+    t0 = deviceMotion.timestamp;
+    printf("%f %f\n", t0-t1, ua.x);
+    a2=a1; a1=a0;
+    a0 = GLKMatrix3MultiplyVector3(GLKMatrix3Make(rm.m11, rm.m12, rm.m13,
+                                                  rm.m21, rm.m22, rm.m23,
+                                                  rm.m31, rm.m32, rm.m33),
+                                   GLKVector3Make(-ua.x, -ua.y, -ua.z));
+    v3=v2; v2=v1;
+    v1.x += (t0-t2)*(a2.x+(4.0*a1.x)+a0.x)/6.0;
+    v1.y += (t0-t2)*(a2.y+(4.0*a1.y)+a0.y)/6.0;
+    v1.z += (t0-t2)*(a2.z+(4.0*a1.z)+a0.z)/6.0;
+    //v1.x *= 0.98;
+    //v1.y *= 0.98;
+    //v1.z *= 0.98;    
+    d2.x += (t1-t3)*(v3.x+(4.0*v2.x)+v1.x)/6.0;
+    d2.y += (t1-t3)*(v3.y+(4.0*v2.y)+v1.y)/6.0;
+    d2.z += (t1-t3)*(v3.z+(4.0*v2.z)+v1.z)/6.0;
+}
+
+/*-(void)updatePenPositionWithDeviceMotion:(CMDeviceMotion *)deviceMotion {
+    CMAcceleration ua = deviceMotion.userAcceleration;
+    //CMAcceleration g = deviceMotion.gravity;
+    CMRotationMatrix rm = deviceMotion.attitude.rotationMatrix;
+    NSTimeInterval dt = deviceMotion.timestamp - lastPenPositionTimestamp;
+    GLKVector3 resA = GLKMatrix3MultiplyVector3(GLKMatrix3Make(rm.m11, rm.m12, rm.m13,
+                                                               rm.m21, rm.m22, rm.m23,
+                                                               rm.m31, rm.m32, rm.m33),
+                                                GLKVector3Make(-ua.x, -ua.y, -ua.z));
+    
+    penA.x = (resA.x);
+    penA.y = (resA.y);
+    penA.z = (resA.z);
+    penV.x += penA.x * dt;
+    penV.y += penA.y * dt;
+    penV.z += penA.z * dt;
+    penD.x += penV.x * dt;
+    penD.y += penV.y * dt;
+    penD.z += penV.z * dt;
+    lastPenPositionTimestamp = deviceMotion.timestamp;
+}*/ // old updatePenPosition
+
+-(void)updatePenDrawing {
+    if (penDrawing) [self addNewVertexX:d2.x*20 y:d2.y*20 z:d2.z*20];
+    /*
+    if (penDrawing) {
+        vertices[0] = GLKVector3Make(0, 0, 0);
+        vertices[1] = GLKVector3Make(penA.x*5, penA.y*5, penA.z*5);
+        vertexColors[0] = GLKVector4Make(0, 0, 1, 1);
+        vertexColors[1] = GLKVector4Make(1, 0, 0, 1);
+        vertexCount = 2;
     }
-	self.context = nil;
+    */
 }
 
-- (void)didReceiveMemoryWarning
-{
-    [super didReceiveMemoryWarning];
-    // Release any cached data, images, etc. that aren't in use.
-}
-
-- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
-{
-    // Return YES for supported orientations
-    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone) {
-        return (interfaceOrientation != UIInterfaceOrientationPortraitUpsideDown);
-    } else {
-        return YES;
+-(void)addNewVertexX:(float)x y:(float)y z:(float)z r:(float)r g:(float)g b:(float)b {
+    if (vertexCount<MAX_VERTICES) {
+        vertices[vertexCount] = GLKVector3Make(x,y,z);
+        vertexColors[vertexCount] = GLKVector4Make(r,g,b,1);
+        vertexCount++;
     }
 }
 
-- (void)setupGL
-{
+-(void)addNewVertexX:(float)x y:(float)y z:(float)z {
+    switch (colorRotation) {
+        case'r': {[self addNewVertexX:x y:y z:z r:1 g:0 b:0]; colorRotation='y'; break;}
+        case'y': {[self addNewVertexX:x y:y z:z r:1 g:1 b:0]; colorRotation='g'; break;}
+        case'g': {[self addNewVertexX:x y:y z:z r:0 g:1 b:0]; colorRotation='c'; break;}
+        case'c': {[self addNewVertexX:x y:y z:z r:0 g:1 b:1]; colorRotation='b'; break;}
+        case'b': {[self addNewVertexX:x y:y z:z r:0 g:0 b:1]; colorRotation='m'; break;}
+        case'm': {[self addNewVertexX:x y:y z:z r:1 g:0 b:1]; colorRotation='r'; break;}
+        default: {[self addNewVertexX:x y:y z:z r:1 g:1 b:1]; break;}
+    }
+}
+
+-(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
+    //self.paused = !self.paused;
+    penDrawing=YES;
+    vertexCount=0;
+    GLKVector3 zero = GLKVector3Make(0,0,0);
+    v1=zero;
+    v2=zero;
+    v3=zero;
+    d2=zero;
+    /*penD.x=0;
+    penD.y=0;
+    penD.z=0;
+    penV.x=0;
+    penV.y=0;
+    penV.z=0;
+    rotationD.x = 0.0;
+    rotationD.y = 0.0;
+    rotationD.z = 0.0;
+    rotationV.x = 0.0;
+    rotationV.y = 0.0;
+    rotationV.z = 0.0;*/ // old penUpdate variable reset
+}
+
+-(void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event {
+    penDrawing=NO;
+}
+
+-(void)drawLogo {
+    vertexCount = 0;
+    float q = 2.0/3.0;
+    [self addNewVertexX:  0 y:  1 z: -q r:1.0 g:0.0 b:0.4];
+    [self addNewVertexX: -q y:  1 z: -q r:1.0 g:0.0 b:0.2];
+    [self addNewVertexX: -q y:  1 z:  q r:1.0 g:0.0 b:0.0]; // r
+    [self addNewVertexX:  q y:  1 z:  q r:1.0 g:0.2 b:0.0];
+    [self addNewVertexX:  q y:  1 z:  0 r:1.0 g:0.4 b:0.0];
+    [self addNewVertexX:  1 y:  q z:  0 r:1.0 g:0.6 b:0.0];
+    [self addNewVertexX:  1 y:  q z: -q r:1.0 g:0.8 b:0.0];
+    [self addNewVertexX:  1 y: -q z: -q r:1.0 g:1.0 b:0.0]; // y
+    [self addNewVertexX:  1 y: -q z:  q r:0.8 g:1.0 b:0.0];
+    [self addNewVertexX:  1 y:  0 z:  q r:0.6 g:1.0 b:0.0];
+    [self addNewVertexX:  q y:  0 z:  1 r:0.4 g:1.0 b:0.0];
+    [self addNewVertexX:  q y:  q z:  1 r:0.2 g:1.0 b:0.0];
+    [self addNewVertexX: -q y:  q z:  1 r:0.0 g:1.0 b:0.0]; // g
+    [self addNewVertexX: -q y: -q z:  1 r:0.0 g:1.0 b:0.2];
+    [self addNewVertexX:  0 y: -q z:  1 r:0.0 g:1.0 b:0.4];
+    [self addNewVertexX:  0 y: -1 z:  q r:0.0 g:1.0 b:0.6];
+    [self addNewVertexX:  q y: -1 z:  q r:0.0 g:1.0 b:0.8];
+    [self addNewVertexX:  q y: -1 z: -q r:0.0 g:1.0 b:1.0]; // c
+    [self addNewVertexX: -q y: -1 z: -q r:0.0 g:0.8 b:1.0];
+    [self addNewVertexX: -q y: -1 z:  0 r:0.0 g:0.6 b:1.0];
+    [self addNewVertexX: -1 y: -q z:  0 r:0.0 g:0.4 b:1.0];
+    [self addNewVertexX: -1 y: -q z:  q r:0.0 g:0.2 b:1.0];
+    [self addNewVertexX: -1 y:  q z:  q r:0.0 g:0.0 b:1.0]; // b
+    [self addNewVertexX: -1 y:  q z: -q r:0.2 g:0.0 b:1.0];
+    [self addNewVertexX: -1 y:  0 z: -q r:0.4 g:0.0 b:1.0];
+    [self addNewVertexX: -q y:  0 z: -1 r:0.6 g:0.0 b:1.0];
+    [self addNewVertexX: -q y: -q z: -1 r:0.8 g:0.0 b:1.0];
+    [self addNewVertexX:  q y: -q z: -1 r:1.0 g:0.0 b:1.0]; // m
+    [self addNewVertexX:  q y:  q z: -1 r:1.0 g:0.0 b:0.8];
+    [self addNewVertexX:  0 y:  q z: -1 r:1.0 g:0.0 b:0.6];
+    [self addNewVertexX:  0 y:  1 z: -q r:1.0 g:0.0 b:0.4];
+    colorRotation = 'r';    
+}
+
+#pragma mark GL Lifecycle
+
+-(void)setupGL {
+    self.context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+    GLKView *view = (GLKView *)self.view;
+    view.context = self.context;
+    //view.drawableMultisample = GLKViewDrawableMultisample4X;
+    //view.drawableDepthFormat = GLKViewDrawableDepthFormat24;
     [EAGLContext setCurrentContext:self.context];
-    
-    [self loadShaders];
-    
     self.effect = [[GLKBaseEffect alloc] init];
-    self.effect.light0.enabled = GL_TRUE;
-    self.effect.light0.diffuseColor = GLKVector4Make(1.0f, 0.4f, 0.4f, 1.0f);
-    
-    glEnable(GL_DEPTH_TEST);
-    
-    glGenVertexArraysOES(1, &_vertexArray);
-    glBindVertexArrayOES(_vertexArray);
-    
-    glGenBuffers(1, &_vertexBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, _vertexBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(gCubeVertexData), gCubeVertexData, GL_STATIC_DRAW);
-    
-    glEnableVertexAttribArray(GLKVertexAttribPosition);
-    glVertexAttribPointer(GLKVertexAttribPosition, 3, GL_FLOAT, GL_FALSE, 24, BUFFER_OFFSET(0));
-    glEnableVertexAttribArray(GLKVertexAttribNormal);
-    glVertexAttribPointer(GLKVertexAttribNormal, 3, GL_FLOAT, GL_FALSE, 24, BUFFER_OFFSET(12));
-    
-    glBindVertexArrayOES(0);
+    //glEnable(GL_DEPTH_TEST);
+    /*rotationV.x = 0.2;
+    rotationV.y = 1.0;
+    rotationV.z = 0.0;*/
 }
 
-- (void)tearDownGL
-{
+-(void)tearDownGL {
     [EAGLContext setCurrentContext:self.context];
-    
-    glDeleteBuffers(1, &_vertexBuffer);
-    glDeleteVertexArraysOES(1, &_vertexArray);
-    
     self.effect = nil;
-    
-    if (_program) {
-        glDeleteProgram(_program);
-        _program = 0;
-    }
+    if ([EAGLContext currentContext] == self.context) [EAGLContext setCurrentContext:nil];
+    self.context = nil;
 }
 
-#pragma mark - GLKView and GLKViewController delegate methods
-
-- (void)update
-{
-    float aspect = fabsf(self.view.bounds.size.width / self.view.bounds.size.height);
-    GLKMatrix4 projectionMatrix = GLKMatrix4MakePerspective(GLKMathDegreesToRadians(65.0f), aspect, 0.1f, 100.0f);
+-(void)updateGL {
+    /*rotationD.x += rotationV.x * self.timeSinceLastUpdate;
+    rotationD.y += rotationV.y * self.timeSinceLastUpdate;
+    rotationD.z += rotationV.z * self.timeSinceLastUpdate;
+    if      (rotationD.x > 2*M_PI) rotationD.x -= 2*M_PI;
+    else if (rotationD.x < 0)      rotationD.x += 2*M_PI;
+    if      (rotationD.y > 2*M_PI) rotationD.y -= 2*M_PI;
+    else if (rotationD.y < 0)      rotationD.y += 2*M_PI;
+    if      (rotationD.z > 2*M_PI) rotationD.z -= 2*M_PI;
+    else if (rotationD.z < 0)      rotationD.z += 2*M_PI;*/
     
+    float aspect = fabs(self.view.bounds.size.width / self.view.bounds.size.height);
+    GLKMatrix4 projectionMatrix = GLKMatrix4MakePerspective(GLKMathDegreesToRadians(65.0f), aspect, 0.0f, 100.0f);
     self.effect.transform.projectionMatrix = projectionMatrix;
     
-    GLKMatrix4 baseModelViewMatrix = GLKMatrix4MakeTranslation(0.0f, 0.0f, -4.0f);
-    baseModelViewMatrix = GLKMatrix4Rotate(baseModelViewMatrix, _rotation, 0.0f, 1.0f, 0.0f);
-    
-    // Compute the model view matrix for the object rendered with GLKit
-    GLKMatrix4 modelViewMatrix = GLKMatrix4MakeTranslation(0.0f, 0.0f, -1.5f);
-    modelViewMatrix = GLKMatrix4Rotate(modelViewMatrix, _rotation, 1.0f, 1.0f, 1.0f);
-    modelViewMatrix = GLKMatrix4Multiply(baseModelViewMatrix, modelViewMatrix);
-    
+    //GLKMatrix4 modelViewMatrix = GLKMatrix4MakeTranslation(0.0f, 0.0f, -10.0f);
+    /*modelViewMatrix = GLKMatrix4Rotate(modelViewMatrix, rotationD.x, 1, 0, 0);
+    modelViewMatrix = GLKMatrix4Rotate(modelViewMatrix, rotationD.y, 0, 1, 0);
+    modelViewMatrix = GLKMatrix4Rotate(modelViewMatrix, rotationD.z, 0, 0, 1);*/
+    CMRotationMatrix rm = motionManager.deviceMotion.attitude.rotationMatrix;
+    GLKMatrix4 modelViewMatrix = GLKMatrix4Make(rm.m11, rm.m21, rm.m31, 0,
+                                                rm.m12, rm.m22, rm.m32, 0,
+                                                rm.m13, rm.m23, rm.m33, 0,
+                                                     0,      0,  -10.0, 1);
     self.effect.transform.modelviewMatrix = modelViewMatrix;
-    
-    // Compute the model view matrix for the object rendered with ES2
-    modelViewMatrix = GLKMatrix4MakeTranslation(0.0f, 0.0f, 1.5f);
-    modelViewMatrix = GLKMatrix4Rotate(modelViewMatrix, _rotation, 1.0f, 1.0f, 1.0f);
-    modelViewMatrix = GLKMatrix4Multiply(baseModelViewMatrix, modelViewMatrix);
-    
-    _normalMatrix = GLKMatrix3InvertAndTranspose(GLKMatrix4GetMatrix3(modelViewMatrix), NULL);
-    
-    _modelViewProjectionMatrix = GLKMatrix4Multiply(projectionMatrix, modelViewMatrix);
-    
-    _rotation += self.timeSinceLastUpdate * 0.5f;
 }
 
-- (void)glkView:(GLKView *)view drawInRect:(CGRect)rect
-{
-    glClearColor(0.65f, 0.65f, 0.65f, 1.0f);
+#pragma mark - GLKViewDelegate methods
+
+-(void)glkView:(GLKView *)view drawInRect:(CGRect)rect {
+    glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
-    glBindVertexArrayOES(_vertexArray);
-    
-    // Render the object with GLKit
     [self.effect prepareToDraw];
-    
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    
-    // Render the object again with ES2
-    glUseProgram(_program);
-    
-    glUniformMatrix4fv(uniforms[UNIFORM_MODELVIEWPROJECTION_MATRIX], 1, 0, _modelViewProjectionMatrix.m);
-    glUniformMatrix3fv(uniforms[UNIFORM_NORMAL_MATRIX], 1, 0, _normalMatrix.m);
-    
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glEnableVertexAttribArray(GLKVertexAttribPosition);
+    glVertexAttribPointer(GLKVertexAttribPosition, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+    glEnableVertexAttribArray(GLKVertexAttribColor);
+    glVertexAttribPointer(GLKVertexAttribColor, 4, GL_FLOAT, GL_FALSE, 0, vertexColors);
+    glLineWidth(11.0);
+    glDrawArrays(GL_LINE_STRIP, 0, vertexCount);
 }
 
-#pragma mark -  OpenGL ES 2 shader compilation
+#pragma mark - GLKViewControllerDelegate methods
 
-- (BOOL)loadShaders
-{
-    GLuint vertShader, fragShader;
-    NSString *vertShaderPathname, *fragShaderPathname;
-    
-    // Create shader program.
-    _program = glCreateProgram();
-    
-    // Create and compile vertex shader.
-    vertShaderPathname = [[NSBundle mainBundle] pathForResource:@"Shader" ofType:@"vsh"];
-    if (![self compileShader:&vertShader type:GL_VERTEX_SHADER file:vertShaderPathname]) {
-        NSLog(@"Failed to compile vertex shader");
-        return NO;
-    }
-    
-    // Create and compile fragment shader.
-    fragShaderPathname = [[NSBundle mainBundle] pathForResource:@"Shader" ofType:@"fsh"];
-    if (![self compileShader:&fragShader type:GL_FRAGMENT_SHADER file:fragShaderPathname]) {
-        NSLog(@"Failed to compile fragment shader");
-        return NO;
-    }
-    
-    // Attach vertex shader to program.
-    glAttachShader(_program, vertShader);
-    
-    // Attach fragment shader to program.
-    glAttachShader(_program, fragShader);
-    
-    // Bind attribute locations.
-    // This needs to be done prior to linking.
-    glBindAttribLocation(_program, ATTRIB_VERTEX, "position");
-    glBindAttribLocation(_program, ATTRIB_NORMAL, "normal");
-    
-    // Link program.
-    if (![self linkProgram:_program]) {
-        NSLog(@"Failed to link program: %d", _program);
-        
-        if (vertShader) {
-            glDeleteShader(vertShader);
-            vertShader = 0;
-        }
-        if (fragShader) {
-            glDeleteShader(fragShader);
-            fragShader = 0;
-        }
-        if (_program) {
-            glDeleteProgram(_program);
-            _program = 0;
-        }
-        
-        return NO;
-    }
-    
-    // Get uniform locations.
-    uniforms[UNIFORM_MODELVIEWPROJECTION_MATRIX] = glGetUniformLocation(_program, "modelViewProjectionMatrix");
-    uniforms[UNIFORM_NORMAL_MATRIX] = glGetUniformLocation(_program, "normalMatrix");
-    
-    // Release vertex and fragment shaders.
-    if (vertShader) {
-        glDetachShader(_program, vertShader);
-        glDeleteShader(vertShader);
-    }
-    if (fragShader) {
-        glDetachShader(_program, fragShader);
-        glDeleteShader(fragShader);
-    }
-    
-    return YES;
-}
-
-- (BOOL)compileShader:(GLuint *)shader type:(GLenum)type file:(NSString *)file
-{
-    GLint status;
-    const GLchar *source;
-    
-    source = (GLchar *)[[NSString stringWithContentsOfFile:file encoding:NSUTF8StringEncoding error:nil] UTF8String];
-    if (!source) {
-        NSLog(@"Failed to load vertex shader");
-        return NO;
-    }
-    
-    *shader = glCreateShader(type);
-    glShaderSource(*shader, 1, &source, NULL);
-    glCompileShader(*shader);
-    
-#if defined(DEBUG)
-    GLint logLength;
-    glGetShaderiv(*shader, GL_INFO_LOG_LENGTH, &logLength);
-    if (logLength > 0) {
-        GLchar *log = (GLchar *)malloc(logLength);
-        glGetShaderInfoLog(*shader, logLength, &logLength, log);
-        NSLog(@"Shader compile log:\n%s", log);
-        free(log);
-    }
-#endif
-    
-    glGetShaderiv(*shader, GL_COMPILE_STATUS, &status);
-    if (status == 0) {
-        glDeleteShader(*shader);
-        return NO;
-    }
-    
-    return YES;
-}
-
-- (BOOL)linkProgram:(GLuint)prog
-{
-    GLint status;
-    glLinkProgram(prog);
-    
-#if defined(DEBUG)
-    GLint logLength;
-    glGetProgramiv(prog, GL_INFO_LOG_LENGTH, &logLength);
-    if (logLength > 0) {
-        GLchar *log = (GLchar *)malloc(logLength);
-        glGetProgramInfoLog(prog, logLength, &logLength, log);
-        NSLog(@"Program link log:\n%s", log);
-        free(log);
-    }
-#endif
-    
-    glGetProgramiv(prog, GL_LINK_STATUS, &status);
-    if (status == 0) {
-        return NO;
-    }
-    
-    return YES;
-}
-
-- (BOOL)validateProgram:(GLuint)prog
-{
-    GLint logLength, status;
-    
-    glValidateProgram(prog);
-    glGetProgramiv(prog, GL_INFO_LOG_LENGTH, &logLength);
-    if (logLength > 0) {
-        GLchar *log = (GLchar *)malloc(logLength);
-        glGetProgramInfoLog(prog, logLength, &logLength, log);
-        NSLog(@"Program validate log:\n%s", log);
-        free(log);
-    }
-    
-    glGetProgramiv(prog, GL_VALIDATE_STATUS, &status);
-    if (status == 0) {
-        return NO;
-    }
-    
-    return YES;
+-(void)update {
+    [self updatePenDrawing];
+    [self updateGL];
 }
 
 @end
