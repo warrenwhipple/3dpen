@@ -43,20 +43,20 @@
     [self setupGL];
 }
 
--(void)viewDidUnload {
-    [super viewDidUnload];
-    [self tearDownGL];
-    [self tearDownPen];
-}
+//-(void)viewDidUnload {
+//    [super viewDidUnload];
+//    [self tearDownGL];
+//    [self tearDownPen];
+//}
 
 -(void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];    
     // Release any cached data, images, etc that aren't in use.
 }
 
--(BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
-    return (interfaceOrientation == UIInterfaceOrientationPortrait);
-}
+//-(BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
+//    return (interfaceOrientation == UIInterfaceOrientationPortrait);
+//}
 
 #pragma mark - Pen Lifecycle
 
