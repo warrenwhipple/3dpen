@@ -11,4 +11,4 @@ It turns out the idea has a long history.
 - [Wikipedia: Dead reckoning](https://en.wikipedia.org/wiki/Dead_reckoning)
 - [A comparison of Pedestrian Dead-Reckoning algorithms using a low-cost MEMS IMU (2009)](https://ieeexplore.ieee.org/document/5286542/)
 
-While this app does work in short busrts of drawing for a second or two at a time, I was unable to address the drift amplification problems, and abandoned the project. The idea could likely be improved with sensor fusion algorithms + Kalman filtering, and/or combining the accelerometer data with camera data a la Apple’s ARKit. Though I have not looked into these approaches recently.
+While this 3D Pen app does work in short bursts for drawing a second or two at a time, I was unable to address the drift amplification problems, and abandoned the project. The idea could likely be improved with sensor fusion algorithms + Kalman filtering, and/or combining the accelerometer data with camera data a la Apple’s later introduced ARKit. Though I have not looked into these approaches recently.
