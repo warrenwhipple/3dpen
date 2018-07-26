@@ -2,6 +2,8 @@
 
 An experiment in dead reckoning using iPhone accelerometer and gyroscopic sensors.
 
+![Animated gif demo](https://media.giphy.com/media/39qD4sMKrpBVLYJRC7/giphy.gif)
+
 Apple added gyroscopic MEMS accelerometers to the iPhone 4 in 2010, to compliment the lateral MEMS accelerometers introduced in the iPhone 1. Hypothetically, it should be possible to track an iPhone’s position in space by integrating over the acceleration data to calculate lateral and rotational velocity, and integrating again to calculate lateral and rotational position.
 
 This project is my attempt to apply this idea to use an iPhone as pseudo pen that can draw in 3D space and view the results on screen.
