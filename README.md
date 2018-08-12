@@ -2,7 +2,7 @@
 
 An experiment in dead reckoning using iPhone accelerometer and gyroscope sensors.
 
-![Animated gif demo](https://media.giphy.com/media/39qD4sMKrpBVLYJRC7/giphy.gif)
+![Animated gif demo](https://user-images.githubusercontent.com/12202734/44002420-0730af26-9e10-11e8-9bde-95e8bcc1409d.gif)
 
 Apple added gyroscopic MEMS accelerometers to the iPhone 4 in 2010, to compliment the lateral MEMS accelerometers introduced in the iPhone 1. Hypothetically, it should be possible to track an iPhone’s position in space by integrating over the acceleration data to calculate lateral and rotational velocity, and integrating again to calculate lateral and rotational position.
 
